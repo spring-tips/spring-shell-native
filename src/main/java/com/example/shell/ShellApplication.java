@@ -42,7 +42,6 @@ class LoginService {
     String loggedInUser() {
         return this.loggedIn() ?  this.loggedIn.get() :  null;
     }
-
 }
 
 @ShellComponent
@@ -62,8 +61,6 @@ record LoginCommands(LoginService loginService) {
     public Availability logoutAvailability() {
         return this.loginService.loggedIn() ? Availability.available() : Availability.unavailable("you must login!");
     }
-
-
 }
 
 @Component
@@ -72,9 +69,7 @@ record LoginPromptProvider(LoginService loginService) implements PromptProvider 
     @Override
     public AttributedString getPrompt() {
         return this.loginService.loggedIn() ?
-                new AttributedString(this.loginService.loggedInUser() + ":>",
-                        AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW)) :
-                new AttributedString("unknown:>",
-                        AttributedStyle.DEFAULT.foreground(AttributedStyle.RED));
+                new AttributedString(this.loginService.loggedInUser() + ":>", AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW)) :
+                new AttributedString("unknown:>", AttributedStyle.DEFAULT.foreground(AttributedStyle.RED));
     }
 }

@@ -1,1 +1,1 @@
-mvn -Pnative -DskipTests clean package && ./target/shell 
+mvn -Pnative -DskipTests clean package
