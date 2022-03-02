@@ -1,16 +1,18 @@
 package com.example.shell;
 
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.CommandLineRunner;
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStyle;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.EventListener;
+import org.springframework.shell.Availability;
+import org.springframework.shell.jline.PromptProvider;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
+import org.springframework.shell.standard.ShellMethodAvailability;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 @SpringBootApplication
 public class ShellApplication {
@@ -18,54 +20,61 @@ public class ShellApplication {
     public static void main(String[] args) {
         SpringApplication.run(ShellApplication.class, args);
     }
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void beginInShellApplication() {
-        System.out.println("EL in Main");
-    }
 }
 
-@Component
-class EL {
+@Service
+class LoginService {
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void begin() {
-        System.out.println("EL");
+    private final AtomicReference<String> loggedIn = new AtomicReference<>();
+
+    void login(String user, String pw) {
+        this.loggedIn.set(user);
     }
-}
 
-@Component
-class AL implements ApplicationListener<ApplicationReadyEvent> {
-
-    @Override
-    public void onApplicationEvent(ApplicationReadyEvent event) {
-        System.out.println("AL");
+    void logout() {
+        this.loggedIn.set(null);
     }
-}
 
-@Component
-class CLR implements CommandLineRunner {
-
-    @Override
-    public void run(String... args) throws Exception {
-        System.out.println("CLR");
+    boolean loggedIn() {
+        return this.loggedIn.get() != null;
     }
-}
 
-@Component
-class AR implements ApplicationRunner {
-
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
-        System.out.println("AR");
+    String loggedInUser() {
+        return this.loggedIn() ?  this.loggedIn.get() :  null;
     }
+
 }
 
 @ShellComponent
-class MyCommands {
+record LoginCommands(LoginService loginService) {
 
-    @ShellMethod("Add two integers together.")
-    public int add(int a, int b) {
-        return a + b;
+    @ShellMethod("Login")
+    public void login(String username, String password) {
+        this.loginService.login(username, password);
+    }
+
+    @ShellMethodAvailability("logoutAvailability")
+    @ShellMethod("Logout")
+    public void logout() {
+        this.loginService.logout();
+    }
+
+    public Availability logoutAvailability() {
+        return this.loginService.loggedIn() ? Availability.available() : Availability.unavailable("you must login!");
+    }
+
+
+}
+
+@Component
+record LoginPromptProvider(LoginService loginService) implements PromptProvider {
+
+    @Override
+    public AttributedString getPrompt() {
+        return this.loginService.loggedIn() ?
+                new AttributedString(this.loginService.loggedInUser() + ":>",
+                        AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW)) :
+                new AttributedString("unknown:>",
+                        AttributedStyle.DEFAULT.foreground(AttributedStyle.RED));
     }
 }
