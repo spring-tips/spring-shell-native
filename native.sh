@@ -1,1 +1,1 @@
-mvn -Pnative -DskipTests clean package
+./mvnw -Pnative -DskipTests clean package
